@@ -18,7 +18,7 @@ export default async function Navbar() {
         <Link href="/" prefetch className="flex items-center">
           <div className="relative w-10 h-10 mr-2">
             <Image
-              src="https://www.google.com/imgres?q=hadiya%20hossana&imgurl=https%3A%2F%2Fsoccer.et%2Fwp-content%2Fuploads%2F2023%2F12%2FHossana.png&imgrefurl=https%3A%2F%2Fsoccer.et%2Fclub%2Fhadiya-hossana%2F&docid=qegExdqDTRI7vM&tbnid=vMozVCBOdMHaEM&vet=12ahUKEwjq9ebW_YuMAxVCCRAIHWvINGkQM3oECHoQAA..i&w=500&h=500&hcb=2&ved=2ahUKEwjq9ebW_YuMAxVCCRAIHWvINGkQM3oECHoQAA"
+              src="https://www.google.com/url?sa=i&url=https%3A%2F%2Fsoccer.et%2Fclub%2Fhadiya-hossana%2F&psig=AOvVaw2-4I4X7ZyM3q4Nn1EUsGjx&ust=1742124513222000&source=images&cd=vfe&opi=89978449&ved=0CBQQjRxqFwoTCOj799f9i4wDFQAAAAAdAAAAABAE"
               alt="Hadiya Hossana FC Logo"
               width={40}
               height={40}
