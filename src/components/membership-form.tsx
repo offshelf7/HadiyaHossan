@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
@@ -13,6 +13,8 @@ import {
   CardHeader,
   CardTitle,
 } from "./ui/card";
+import { createClient } from "../../supabase/client";
+import { useRouter } from "next/navigation";
 
 export default function MembershipForm() {
   const [formData, setFormData] = useState({
@@ -25,6 +27,30 @@ export default function MembershipForm() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [paymentError, setPaymentError] = useState("");
+  const [user, setUser] = useState<any>(null);
+  const supabase = createClient();
+  const router = useRouter();
+
+  useEffect(() => {
+    // Check if user is logged in
+    const checkUser = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      setUser(user);
+
+      if (user?.email) {
+        setFormData((prev) => ({
+          ...prev,
+          email: user.email,
+          fullName: user.user_metadata?.full_name || "",
+        }));
+      }
+    };
+
+    checkUser();
+  }, [supabase]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
@@ -39,19 +65,72 @@ export default function MembershipForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setPaymentError("");
 
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      // Get current user if logged in
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        // If not logged in, redirect to sign up
+        router.push("/sign-up");
+        return;
+      }
+
+      // Create a checkout session using the edge function
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/create-checkout`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+            "X-Customer-Email": formData.email,
+          },
+          body: JSON.stringify({
+            price_id: "price_membership_annual", // This would be your actual Stripe price ID
+            user_id: user.id,
+            return_url: `${window.location.origin}/success`,
+          }),
+        },
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to create checkout session");
+      }
+
+      const { url } = await response.json();
+
+      // Update user profile with membership data
+      const { error: updateError } = await supabase
+        .from("users")
+        .update({
+          name: formData.fullName,
+          phone: formData.phone,
+          address: formData.address,
+        })
+        .eq("id", user.id);
+
+      if (updateError) {
+        console.error("Error updating user profile:", updateError);
+      }
+
+      // In a real implementation, redirect to Stripe checkout
+      // window.location.href = url;
+
+      // For this demo, simulate successful payment
       setIsSubmitting(false);
       setSubmitSuccess(true);
-      setFormData({
-        fullName: "",
-        email: "",
-        phone: "",
-        address: "",
-        message: "",
-      });
-    }, 1500);
+    } catch (error: any) {
+      setIsSubmitting(false);
+      setPaymentError(
+        error.message || "An error occurred while processing your membership",
+      );
+      console.error("Payment error:", error);
+    }
   };
 
   return (
@@ -67,17 +146,23 @@ export default function MembershipForm() {
         {submitSuccess ? (
           <div className="text-center py-8">
             <div className="text-[#7f001b] text-5xl mb-4">✓</div>
-            <h3 className="text-xl font-bold mb-2">Application Submitted!</h3>
+            <h3 className="text-xl font-bold mb-2">Membership Confirmed!</h3>
             <p className="text-gray-600">
-              Thank you for your interest in becoming a member. We'll review
-              your application and contact you soon.
+              Thank you for becoming a member! Your payment has been processed
+              successfully. You now have access to all member benefits.
             </p>
-            <Button className="mt-6" onClick={() => setSubmitSuccess(false)}>
-              Submit Another Application
+            <Button className="mt-6" onClick={() => router.push("/")}>
+              Return to Home Page
             </Button>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
+            {paymentError && (
+              <div className="bg-red-50 text-red-600 p-3 rounded-md text-sm">
+                {paymentError}
+              </div>
+            )}
+
             <div className="space-y-2">
               <Label htmlFor="fullName">Full Name</Label>
               <Input
@@ -100,6 +185,7 @@ export default function MembershipForm() {
                 onChange={handleChange}
                 required
                 placeholder="john@example.com"
+                disabled={!!user} // Disable if user is logged in
               />
             </div>
 

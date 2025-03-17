@@ -1,16 +1,31 @@
+"use client";
+
 import Link from "next/link";
-import { createClient } from "../../supabase/server";
+import { createClient } from "../../supabase/client";
 import { Button } from "./ui/button";
-import { User, UserCircle, Menu } from "lucide-react";
+import { User, UserCircle, Menu, X } from "lucide-react";
 import UserProfile from "./user-profile";
 import Image from "next/image";
+import CartIcon from "./cart-icon";
+import React from "react";
 
-export default async function Navbar() {
+export default function Navbar() {
   const supabase = createClient();
+  const [user, setUser] = React.useState<any>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
 
-  const {
-    data: { user },
-  } = await (await supabase).auth.getUser();
+  React.useEffect(() => {
+    const getUser = async () => {
+      const { data } = await supabase.auth.getUser();
+      setUser(data.user);
+    };
+
+    getUser();
+  }, []);
+
+  const toggleMobileMenu = () => {
+    setMobileMenuOpen(!mobileMenuOpen);
+  };
 
   return (
     <nav className="w-full border-b border-gray-200 bg-white py-4 sticky top-0 z-50">
@@ -18,7 +33,7 @@ export default async function Navbar() {
         <Link href="/" prefetch className="flex items-center">
           <div className="relative w-10 h-10 mr-2">
             <Image
-              src="https://www.google.com/url?sa=i&url=https%3A%2F%2Fsoccer.et%2Fclub%2Fhadiya-hossana%2F&psig=AOvVaw2-4I4X7ZyM3q4Nn1EUsGjx&ust=1742124513222000&source=images&cd=vfe&opi=89978449&ved=0CBQQjRxqFwoTCOj799f9i4wDFQAAAAAdAAAAABAE"
+              src="https://images.unsplash.com/photo-1589487391730-58f20eb2c308?w=300&q=80"
               alt="Hadiya Hossana FC Logo"
               width={40}
               height={40}
@@ -31,37 +46,41 @@ export default async function Navbar() {
         <div className="hidden md:flex space-x-6">
           <Link
             href="/players"
-            className="font-medium text-gray-700 hover:text-red-700 transition-colors"
+            className="font-medium text-gray-700 hover:text-[#640015] transition-colors"
           >
             Players
           </Link>
           <Link
             href="/fixtures"
-            className="font-medium text-gray-700 hover:text-red-700 transition-colors"
+            className="font-medium text-gray-700 hover:text-[#640015] transition-colors"
           >
             Fixtures
           </Link>
           <Link
             href="/news"
-            className="font-medium text-gray-700 hover:text-red-700 transition-colors"
+            className="font-medium text-gray-700 hover:text-[#640015] transition-colors"
           >
             News
           </Link>
           <Link
             href="/shop"
-            className="font-medium text-gray-700 hover:text-red-700 transition-colors"
+            className="font-medium text-gray-700 hover:text-[#640015] transition-colors"
           >
             Shop
           </Link>
           <Link
             href="/donate"
-            className="font-medium text-gray-700 hover:text-red-700 transition-colors"
+            className="font-medium text-gray-700 hover:text-[#640015] transition-colors"
           >
             Donate
           </Link>
         </div>
 
         <div className="flex gap-4 items-center">
+          <div className="mr-2">
+            <CartIcon />
+          </div>
+
           {user ? (
             <>
               <Link
@@ -71,28 +90,108 @@ export default async function Navbar() {
                 <Button>Dashboard</Button>
               </Link>
               <UserProfile />
+              <button
+                className="md:hidden text-gray-700 ml-2"
+                onClick={toggleMobileMenu}
+                aria-label="Toggle mobile menu"
+              >
+                {mobileMenuOpen ? (
+                  <X className="w-6 h-6" />
+                ) : (
+                  <Menu className="w-6 h-6" />
+                )}
+              </button>
             </>
           ) : (
             <>
               <Link
                 href="/sign-in"
-                className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900"
+                className="hidden md:inline-block px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900"
               >
                 Sign In
               </Link>
               <Link
                 href="/sign-up"
-                className="px-4 py-2 text-sm font-medium text-white bg-red-700 rounded-md hover:bg-red-800"
+                className="hidden md:inline-block px-4 py-2 text-sm font-medium text-white bg-[#640015] rounded-md hover:bg-[#111827]"
               >
                 Sign Up
               </Link>
-              <button className="md:hidden text-gray-700">
-                <Menu className="w-6 h-6" />
+              <button
+                className="md:hidden text-gray-700"
+                onClick={toggleMobileMenu}
+                aria-label="Toggle mobile menu"
+              >
+                {mobileMenuOpen ? (
+                  <X className="w-6 h-6" />
+                ) : (
+                  <Menu className="w-6 h-6" />
+                )}
               </button>
             </>
           )}
         </div>
       </div>
+
+      {/* Mobile menu */}
+      {mobileMenuOpen && (
+        <div className="md:hidden bg-white py-4 px-4 shadow-md">
+          <div className="flex flex-col space-y-4">
+            <Link
+              href="/players"
+              className="font-medium text-gray-700 hover:text-[#640015] transition-colors py-2"
+              onClick={toggleMobileMenu}
+            >
+              Players
+            </Link>
+            <Link
+              href="/fixtures"
+              className="font-medium text-gray-700 hover:text-[#640015] transition-colors py-2"
+              onClick={toggleMobileMenu}
+            >
+              Fixtures
+            </Link>
+            <Link
+              href="/news"
+              className="font-medium text-gray-700 hover:text-[#640015] transition-colors py-2"
+              onClick={toggleMobileMenu}
+            >
+              News
+            </Link>
+            <Link
+              href="/shop"
+              className="font-medium text-gray-700 hover:text-[#640015] transition-colors py-2"
+              onClick={toggleMobileMenu}
+            >
+              Shop
+            </Link>
+            <Link
+              href="/donate"
+              className="font-medium text-gray-700 hover:text-[#640015] transition-colors py-2"
+              onClick={toggleMobileMenu}
+            >
+              Donate
+            </Link>
+            {!user && (
+              <div className="flex flex-col space-y-2 pt-2 border-t border-gray-200">
+                <Link
+                  href="/sign-in"
+                  className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 rounded-md border border-gray-300"
+                  onClick={toggleMobileMenu}
+                >
+                  Sign In
+                </Link>
+                <Link
+                  href="/sign-up"
+                  className="px-4 py-2 text-sm font-medium text-white bg-[#640015] rounded-md hover:bg-[#111827]"
+                  onClick={toggleMobileMenu}
+                >
+                  Sign Up
+                </Link>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </nav>
   );
 }

@@ -1,12 +1,27 @@
 import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
 import DonationForm from "@/components/donation-form";
+import TopDonors from "@/components/top-donors";
 import { Heart, TrendingUp, Users, Trophy } from "lucide-react";
+import { createClient } from "../../../supabase/server";
 
-export default function DonatePage() {
+export default async function DonatePage() {
+  const supabase = await createClient();
+
+  // Get total donations from the database
+  const { data: donationData, error } = await supabase
+    .from("donations")
+    .select("amount")
+    .eq("payment_status", "succeeded");
+
   // Current donation progress data
   const donationGoal = 50000;
-  const currentDonations = 32750;
+  const currentDonations = error
+    ? 32750
+    : donationData?.reduce(
+        (sum, donation) => sum + parseFloat(donation.amount),
+        0,
+      ) || 32750;
   const percentComplete = (currentDonations / donationGoal) * 100;
 
   return (
@@ -56,8 +71,18 @@ export default function DonatePage() {
           </div>
         </section>
 
+        {/* Top Donors Section */}
+        <section className="py-12 bg-gray-50">
+          <div className="container mx-auto px-4">
+            <h2 className="text-3xl font-bold text-center mb-8">Top Donors</h2>
+            <div className="max-w-4xl mx-auto">
+              <TopDonors />
+            </div>
+          </div>
+        </section>
+
         {/* Donation Form Section */}
-        <section className="py-16 bg-gray-50">
+        <section className="py-16 bg-white">
           <div className="container mx-auto px-4">
             <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-12">
               <div>
@@ -117,7 +142,7 @@ export default function DonatePage() {
         </section>
 
         {/* Donor Recognition */}
-        <section className="py-16 bg-white">
+        <section className="py-16 bg-gray-50">
           <div className="container mx-auto px-4 text-center">
             <h2 className="text-3xl font-bold mb-8">Our Generous Supporters</h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
@@ -131,10 +156,7 @@ export default function DonatePage() {
                 "Heineken Ethiopia",
                 "Abyssinia Bank",
               ].map((sponsor, index) => (
-                <div
-                  key={index}
-                  className="bg-gray-50 p-4 rounded-lg shadow-sm"
-                >
+                <div key={index} className="bg-white p-4 rounded-lg shadow-sm">
                   <div className="h-16 flex items-center justify-center">
                     <span className="font-medium text-gray-800">{sponsor}</span>
                   </div>

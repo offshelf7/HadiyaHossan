@@ -9,6 +9,308 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      commercial_content: {
+        Row: {
+          author_id: string | null
+          content: string
+          created_at: string | null
+          featured_image: string | null
+          id: string
+          published: boolean | null
+          published_at: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          author_id?: string | null
+          content: string
+          created_at?: string | null
+          featured_image?: string | null
+          id?: string
+          published?: boolean | null
+          published_at?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          author_id?: string | null
+          content?: string
+          created_at?: string | null
+          featured_image?: string | null
+          id?: string
+          published?: boolean | null
+          published_at?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commercial_content_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      donations: {
+        Row: {
+          amount: number
+          anonymous: boolean | null
+          created_at: string | null
+          currency: string
+          donor_email: string | null
+          donor_name: string | null
+          id: string
+          message: string | null
+          payment_intent_id: string | null
+          payment_status: string
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          amount: number
+          anonymous?: boolean | null
+          created_at?: string | null
+          currency?: string
+          donor_email?: string | null
+          donor_name?: string | null
+          id?: string
+          message?: string | null
+          payment_intent_id?: string | null
+          payment_status?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          amount?: number
+          anonymous?: boolean | null
+          created_at?: string | null
+          currency?: string
+          donor_email?: string | null
+          donor_name?: string | null
+          id?: string
+          message?: string | null
+          payment_intent_id?: string | null
+          payment_status?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "donations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      news: {
+        Row: {
+          author_id: string | null
+          content: string
+          created_at: string | null
+          featured_image: string | null
+          id: string
+          published: boolean | null
+          published_at: string | null
+          summary: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          author_id?: string | null
+          content: string
+          created_at?: string | null
+          featured_image?: string | null
+          id?: string
+          published?: boolean | null
+          published_at?: string | null
+          summary?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          author_id?: string | null
+          content?: string
+          created_at?: string | null
+          featured_image?: string | null
+          id?: string
+          published?: boolean | null
+          published_at?: string | null
+          summary?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "news_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      news_media: {
+        Row: {
+          created_at: string | null
+          id: string
+          media_type: string
+          media_url: string
+          news_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          media_type: string
+          media_url: string
+          news_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          media_type?: string
+          media_url?: string
+          news_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "news_media_news_id_fkey"
+            columns: ["news_id"]
+            isOneToOne: false
+            referencedRelation: "news"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      order_items: {
+        Row: {
+          color: string | null
+          created_at: string | null
+          id: string
+          order_id: string | null
+          price: number
+          product_id: string | null
+          quantity: number
+          size: string | null
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string | null
+          id?: string
+          order_id?: string | null
+          price: number
+          product_id?: string | null
+          quantity: number
+          size?: string | null
+        }
+        Update: {
+          color?: string | null
+          created_at?: string | null
+          id?: string
+          order_id?: string | null
+          price?: number
+          product_id?: string | null
+          quantity?: number
+          size?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orders: {
+        Row: {
+          created_at: string | null
+          id: string
+          payment_intent_id: string | null
+          shipping_address: Json | null
+          status: string
+          total_amount: number
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          payment_intent_id?: string | null
+          shipping_address?: Json | null
+          status?: string
+          total_amount: number
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          payment_intent_id?: string | null
+          shipping_address?: Json | null
+          status?: string
+          total_amount?: number
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      products: {
+        Row: {
+          category: string
+          colors: Json | null
+          created_at: string | null
+          description: string
+          id: string
+          image: string
+          in_stock: boolean | null
+          name: string
+          price: number
+          sizes: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          category: string
+          colors?: Json | null
+          created_at?: string | null
+          description: string
+          id: string
+          image: string
+          in_stock?: boolean | null
+          name: string
+          price: number
+          sizes?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string
+          colors?: Json | null
+          created_at?: string | null
+          description?: string
+          id?: string
+          image?: string
+          in_stock?: boolean | null
+          name?: string
+          price?: number
+          sizes?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       subscriptions: {
         Row: {
           amount: number | null
@@ -109,6 +411,7 @@ export type Database = {
           token_identifier: string
           updated_at: string | null
           user_id: string | null
+          user_role: string | null
         }
         Insert: {
           avatar_url?: string | null
@@ -123,6 +426,7 @@ export type Database = {
           token_identifier: string
           updated_at?: string | null
           user_id?: string | null
+          user_role?: string | null
         }
         Update: {
           avatar_url?: string | null
@@ -137,6 +441,7 @@ export type Database = {
           token_identifier?: string
           updated_at?: string | null
           user_id?: string | null
+          user_role?: string | null
         }
         Relationships: []
       }
@@ -172,10 +477,66 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      top_donors: {
+        Row: {
+          donor_name: string | null
+          last_donation_date: string | null
+          total_amount: number | null
+          user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "donations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      weekly_top_donors: {
+        Row: {
+          donor_name: string | null
+          last_donation_date: string | null
+          total_amount: number | null
+          user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "donations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
-      [_ in never]: never
+      set_admin_role: {
+        Args: {
+          user_id_param: string
+        }
+        Returns: undefined
+      }
+      set_reporter_role: {
+        Args: {
+          user_id_param: string
+        }
+        Returns: undefined
+      }
+      set_salesperson_role: {
+        Args: {
+          user_id_param: string
+        }
+        Returns: undefined
+      }
+      set_user_role: {
+        Args: {
+          user_id_param: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

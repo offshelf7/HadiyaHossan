@@ -3,7 +3,7 @@ import { Heart } from "lucide-react";
 
 export default function DonationCTA() {
   return (
-    <section className="py-20 bg-gradient-to-r from-[#7f001b] to-[#5a0013] text-white">
+    <section className="py-20 bg-gradient-to-r from-[#7f001b] to-[#5a0013]  text-white">
       <div className="container mx-auto px-4 text-center">
         <div className="inline-block bg-white p-3 rounded-full mb-6">
           <Heart className="w-8 h-8 text-[#7f001b]" />

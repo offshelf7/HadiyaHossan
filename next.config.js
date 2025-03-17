@@ -6,6 +6,8 @@ const nextConfig = {
       "images.unsplash.com",
       "raw.githubusercontent.com",
       "www.google.com",
+      "soccer.et",
+      "imgur.com",
     ],
   },
 };

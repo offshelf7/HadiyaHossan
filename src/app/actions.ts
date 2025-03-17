@@ -8,7 +8,7 @@ import { redirect } from "next/navigation";
 export const signUpAction = async (formData: FormData) => {
   const email = formData.get("email")?.toString();
   const password = formData.get("password")?.toString();
-  const fullName = formData.get("full_name")?.toString() || '';
+  const fullName = formData.get("full_name")?.toString() || "";
   const supabase = await createClient();
 
   if (!email || !password) {
@@ -19,14 +19,17 @@ export const signUpAction = async (formData: FormData) => {
     );
   }
 
-  const { data: { user }, error } = await supabase.auth.signUp({
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.signUp({
     email,
     password,
     options: {
       data: {
         full_name: fullName,
         email: email,
-      }
+      },
     },
   });
 
@@ -36,17 +39,15 @@ export const signUpAction = async (formData: FormData) => {
 
   if (user) {
     try {
-
-      const { error: updateError } = await supabase
-        .from('users')
-        .insert({
-          id: user.id,
-          user_id: user.id,
-          name: fullName,
-          email: email,
-          token_identifier: user.id,
-          created_at: new Date().toISOString()
-        });
+      const { error: updateError } = await supabase.from("users").insert({
+        id: user.id,
+        user_id: user.id,
+        name: fullName,
+        email: email,
+        token_identifier: user.id,
+        role: "user", // Default role
+        created_at: new Date().toISOString(),
+      });
 
       if (updateError) {
         // Error handling without console.error
@@ -56,11 +57,8 @@ export const signUpAction = async (formData: FormData) => {
     }
   }
 
-  return encodedRedirect(
-    "success",
-    "/sign-up",
-    "Thanks for signing up! Please check your email for a verification link.",
-  );
+  // Redirect to membership payment page
+  return redirect("/membership");
 };
 
 export const signInAction = async (formData: FormData) => {
@@ -68,7 +66,10 @@ export const signInAction = async (formData: FormData) => {
   const password = formData.get("password") as string;
   const supabase = await createClient();
 
-  const { error } = await supabase.auth.signInWithPassword({
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.signInWithPassword({
     email,
     password,
   });
@@ -77,7 +78,21 @@ export const signInAction = async (formData: FormData) => {
     return encodedRedirect("error", "/sign-in", error.message);
   }
 
-  return redirect("/dashboard");
+  // Check if user is admin
+  if (user) {
+    const { data: userData } = await supabase
+      .from("users")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
+    if (userData?.role === "admin") {
+      return redirect("/dashboard");
+    }
+  }
+
+  // Regular users go to home page
+  return redirect("/");
 };
 
 export const forgotPasswordAction = async (formData: FormData) => {
@@ -157,10 +172,10 @@ export const checkUserSubscription = async (userId: string) => {
   const supabase = await createClient();
 
   const { data: subscription, error } = await supabase
-    .from('subscriptions')
-    .select('*')
-    .eq('user_id', userId)
-    .eq('status', 'active')
+    .from("subscriptions")
+    .select("*")
+    .eq("user_id", userId)
+    .eq("status", "active")
     .single();
 
   if (error) {
@@ -168,4 +183,71 @@ export const checkUserSubscription = async (userId: string) => {
   }
 
   return !!subscription;
+};
+
+export const checkUserRole = async (userId: string, role: string) => {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("users")
+    .select("role")
+    .eq("id", userId)
+    .single();
+
+  if (error || !data) {
+    return false;
+  }
+
+  return data.role === role;
+};
+
+export const setUserRole = async (
+  userId: string,
+  role: "admin" | "reporter" | "salesperson" | "user",
+) => {
+  const supabase = await createClient();
+
+  // Get current user to check if they are admin
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { success: false, message: "Not authenticated" };
+  }
+
+  // Check if current user is admin
+  const { data: currentUserData } = await supabase
+    .from("users")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  if (currentUserData?.role !== "admin") {
+    return { success: false, message: "Only admins can change user roles" };
+  }
+
+  // Update user role
+  let functionName = "";
+  switch (role) {
+    case "admin":
+      functionName = "set_admin_role";
+      break;
+    case "reporter":
+      functionName = "set_reporter_role";
+      break;
+    case "salesperson":
+      functionName = "set_salesperson_role";
+      break;
+    default:
+      functionName = "set_user_role";
+  }
+
+  const { error } = await supabase.rpc(functionName, { user_id_param: userId });
+
+  if (error) {
+    return { success: false, message: error.message };
+  }
+
+  return { success: true, message: `User role updated to ${role}` };
 };
