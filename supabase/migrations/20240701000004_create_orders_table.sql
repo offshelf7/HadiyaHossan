@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS orders (
 CREATE TABLE IF NOT EXISTS order_items (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   order_id UUID REFERENCES orders(id) ON DELETE CASCADE,
-  product_id VARCHAR(255) NOT NULL,
+  product_id UUID REFERENCES products(id) ON DELETE CASCADE,
   product_name VARCHAR(255) NOT NULL,
   quantity INTEGER NOT NULL,
   price DECIMAL(10, 2) NOT NULL,

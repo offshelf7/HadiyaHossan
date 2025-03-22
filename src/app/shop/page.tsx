@@ -11,7 +11,20 @@ export default async function ShopPage() {
   const supabase = await createClient();
 
   // Fetch products from database
-  const { data: products = [] } = await supabase.from("products").select("*");
+  const { data: rawProducts = [] } = await supabase
+    .from("products")
+    .select("*");
+
+  // Process products to ensure colors is an array
+  const products = rawProducts.map((product) => ({
+    ...product,
+    colors: Array.isArray(product.colors)
+      ? product.colors
+      : typeof product.colors === "object" && product.colors !== null
+        ? Object.values(product.colors)
+        : [],
+    inStock: product.inventory_count > 0,
+  }));
 
   // Get user data to check if admin or salesperson
   const {

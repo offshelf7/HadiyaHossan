@@ -188,54 +188,6 @@ export type Database = {
           },
         ]
       }
-      order_items: {
-        Row: {
-          color: string | null
-          created_at: string | null
-          id: string
-          order_id: string | null
-          price: number
-          product_id: string | null
-          quantity: number
-          size: string | null
-        }
-        Insert: {
-          color?: string | null
-          created_at?: string | null
-          id?: string
-          order_id?: string | null
-          price: number
-          product_id?: string | null
-          quantity: number
-          size?: string | null
-        }
-        Update: {
-          color?: string | null
-          created_at?: string | null
-          id?: string
-          order_id?: string | null
-          price?: number
-          product_id?: string | null
-          quantity?: number
-          size?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "order_items_order_id_fkey"
-            columns: ["order_id"]
-            isOneToOne: false
-            referencedRelation: "orders"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "order_items_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       orders: {
         Row: {
           created_at: string | null
@@ -278,9 +230,10 @@ export type Database = {
           id: string
           image: string
           in_stock: boolean | null
+          inventory_count: number | null
           name: string
           price: number
-          sizes: Json | null
+          sizes: string[] | null
           updated_at: string | null
         }
         Insert: {
@@ -291,9 +244,10 @@ export type Database = {
           id: string
           image: string
           in_stock?: boolean | null
+          inventory_count?: number | null
           name: string
           price: number
-          sizes?: Json | null
+          sizes?: string[] | null
           updated_at?: string | null
         }
         Update: {
@@ -304,9 +258,10 @@ export type Database = {
           id?: string
           image?: string
           in_stock?: boolean | null
+          inventory_count?: number | null
           name?: string
           price?: number
-          sizes?: Json | null
+          sizes?: string[] | null
           updated_at?: string | null
         }
         Relationships: []

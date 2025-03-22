@@ -1,9 +1,10 @@
 import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
-import DonationForm from "@/components/donation-form";
-import TopDonors from "@/components/top-donors";
 import { Heart, TrendingUp, Users, Trophy } from "lucide-react";
 import { createClient } from "../../../supabase/server";
+import StripeElementsProvider from "@/components/stripe-elements-provider";
+import StripePaymentForm from "@/components/stripe-payment-form";
+import TopDonors from "@/components/top-donors";
 
 export default async function DonatePage() {
   const supabase = await createClient();
@@ -135,7 +136,18 @@ export default async function DonatePage() {
               </div>
 
               <div>
-                <DonationForm />
+                <StripeElementsProvider>
+                  <StripePaymentForm
+                    paymentType="donation"
+                    showAmountField={true}
+                    showMessageField={true}
+                    showAnonymousOption={true}
+                    showNameField={true}
+                    title="Make a Donation"
+                    description="Your generosity helps our club thrive"
+                    buttonText="Donate Now"
+                  />
+                </StripeElementsProvider>
               </div>
             </div>
           </div>

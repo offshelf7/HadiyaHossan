@@ -1,6 +1,6 @@
 -- Create products table
 CREATE TABLE IF NOT EXISTS products (
-  id TEXT PRIMARY KEY,
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   name TEXT NOT NULL,
   description TEXT NOT NULL,
   price DECIMAL(10, 2) NOT NULL,

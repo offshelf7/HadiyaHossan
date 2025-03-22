@@ -79,23 +79,19 @@ export default function MembershipForm() {
         return;
       }
 
-      // Create a checkout session using the edge function
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/create-checkout`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
-            "X-Customer-Email": formData.email,
-          },
-          body: JSON.stringify({
-            price_id: "price_membership_annual", // This would be your actual Stripe price ID
-            user_id: user.id,
-            return_url: `${window.location.origin}/success`,
-          }),
+      // Create a checkout session using the Next.js API route
+      const response = await fetch(`/api/create-checkout`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Customer-Email": formData.email,
         },
-      );
+        body: JSON.stringify({
+          price_id: "membership_annual", // This is just an identifier, actual price is defined in the API
+          user_id: user.id,
+          return_url: `${window.location.origin}/success`,
+        }),
+      });
 
       if (!response.ok) {
         const errorData = await response.json();

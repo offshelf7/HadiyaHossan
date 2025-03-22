@@ -12,9 +12,13 @@ import { Button } from "./ui/button";
 
 // Make sure to call loadStripe outside of a component's render to avoid
 // recreating the Stripe object on every render.
-const stripePromise = loadStripe(process.env.STRIPE_PUBLISHABLE_KEY || "");
+// Make sure to call loadStripe outside of a component's render to avoid
+// recreating the Stripe object on every render.
+const stripePromise = loadStripe(
+  process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || "",
+);
 
-if (!process.env.STRIPE_PUBLISHABLE_KEY) {
+if (!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY) {
   console.error(
     "Stripe publishable key is missing. Check your environment variables.",
   );

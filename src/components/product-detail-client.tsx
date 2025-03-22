@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from "./ui/select";
 import { useCart } from "@/context/cart-context";
+import { toast } from "./ui/use-toast";
 
 interface ProductDetailClientProps {
   product: Product;
@@ -19,7 +20,7 @@ interface ProductDetailClientProps {
 export default function ProductDetailClient({
   product,
 }: ProductDetailClientProps) {
-  const { addToCart } = useCart();
+  const { addToCart, isLoading } = useCart();
   const [selectedSize, setSelectedSize] = useState<string | undefined>(
     undefined,
   );
@@ -28,9 +29,27 @@ export default function ProductDetailClient({
   );
   const [quantity, setQuantity] = useState(1);
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
+    let success = true;
     for (let i = 0; i < quantity; i++) {
-      addToCart(product, selectedSize, selectedColor);
+      const result = await addToCart(product, selectedSize, selectedColor);
+      if (!result) {
+        success = false;
+        break;
+      }
+    }
+
+    if (success) {
+      toast({
+        title: "Added to cart",
+        description: `${quantity} ${product.name} has been added to your cart.`,
+      });
+    } else {
+      toast({
+        title: "Not available",
+        description: `Sorry, ${product.name} is not available in the requested quantity.`,
+        variant: "destructive",
+      });
     }
   };
 
@@ -46,39 +65,81 @@ export default function ProductDetailClient({
 
   return (
     <div className="space-y-6">
+      {product.inventory_count !== undefined && (
+        <div className="text-sm">
+          <span
+            className={
+              product.inventory_count > 10
+                ? "text-green-600"
+                : product.inventory_count > 0
+                  ? "text-orange-500"
+                  : "text-red-600"
+            }
+          >
+            {product.inventory_count > 10
+              ? "In Stock"
+              : product.inventory_count > 0
+                ? `Only ${product.inventory_count} left in stock!`
+                : "Out of Stock"}
+          </span>
+        </div>
+      )}
+
       {product.sizes && product.sizes.length > 0 && (
         <div>
           <label className="block text-sm font-medium mb-2">Size</label>
-          <Select value={selectedSize} onValueChange={setSelectedSize}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Select size" />
-            </SelectTrigger>
-            <SelectContent>
-              {product.sizes.map((size) => (
-                <SelectItem key={size} value={size}>
+          <div className="flex flex-wrap gap-2">
+            {product.sizes.map((size) => {
+              const isAvailable =
+                product.inventory_count && product.inventory_count > 0;
+              return (
+                <button
+                  key={size}
+                  type="button"
+                  onClick={() => setSelectedSize(size)}
+                  className={`px-4 py-2 border rounded-md transition-colors ${
+                    selectedSize === size
+                      ? "bg-red-700 text-white border-red-700"
+                      : "bg-white text-gray-700 border-gray-300 hover:border-red-500"
+                  } 
+                    ${!isAvailable ? "opacity-50 cursor-not-allowed" : ""}`}
+                  disabled={!isAvailable}
+                >
                   {size}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+                  {!isAvailable && <span className="ml-1">(Out of Stock)</span>}
+                </button>
+              );
+            })}
+          </div>
         </div>
       )}
 
       {product.colors && product.colors.length > 0 && (
         <div>
           <label className="block text-sm font-medium mb-2">Color</label>
-          <Select value={selectedColor} onValueChange={setSelectedColor}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Select color" />
-            </SelectTrigger>
-            <SelectContent>
-              {product.colors.map((color) => (
-                <SelectItem key={color} value={color}>
+          <div className="flex flex-wrap gap-2">
+            {product.colors.map((color) => {
+              const isAvailable =
+                product.inventory_count && product.inventory_count > 0;
+              return (
+                <button
+                  key={color}
+                  type="button"
+                  onClick={() => setSelectedColor(color)}
+                  className={`px-4 py-2 border rounded-md transition-colors ${
+                    selectedColor === color
+                      ? "bg-red-700 text-white border-red-700"
+                      : "bg-white text-gray-700 border-gray-300 hover:border-red-500"
+                  } 
+                    ${!isAvailable ? "opacity-50 cursor-not-allowed" : ""}`}
+                  disabled={!isAvailable}
+                >
                   {color}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+                  {!isAvailable && <span className="ml-1">(Out of Stock)</span>}
+                </button>
+              );
+            })}
+          </div>
         </div>
       )}
 
@@ -114,12 +175,18 @@ export default function ProductDetailClient({
           className="w-full bg-red-700 hover:bg-red-800 py-6"
           size="lg"
           disabled={
+            isLoading ||
             !product.inStock ||
+            product.inventory_count === 0 ||
             (product.sizes && product.sizes.length > 0 && !selectedSize) ||
             (product.colors && product.colors.length > 0 && !selectedColor)
           }
         >
-          {!product.inStock ? "Out of Stock" : "Add to Cart"}
+          {isLoading
+            ? "Adding..."
+            : !product.inStock || product.inventory_count === 0
+              ? "Out of Stock"
+              : "Add to Cart"}
         </Button>
 
         {product.sizes && product.sizes.length > 0 && !selectedSize && (

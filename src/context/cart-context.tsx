@@ -8,6 +8,7 @@ import {
   useEffect,
   ReactNode,
 } from "react";
+import { createClient } from "../../supabase/client";
 
 export interface CartItem extends Product {
   quantity: number;
@@ -17,18 +18,26 @@ export interface CartItem extends Product {
 
 interface CartContextType {
   cart: CartItem[];
-  addToCart: (product: Product, size?: string, color?: string) => void;
+  addToCart: (
+    product: Product,
+    size?: string,
+    color?: string,
+  ) => Promise<boolean>;
   removeFromCart: (productId: string) => void;
-  updateQuantity: (productId: string, quantity: number) => void;
+  updateQuantity: (productId: string, quantity: number) => Promise<boolean>;
   clearCart: () => void;
   totalItems: number;
   subtotal: number;
+  isLoading: boolean;
+  checkAvailability: (productId: string, quantity: number) => Promise<boolean>;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [cart, setCart] = useState<CartItem[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const supabase = createClient();
 
   // Load cart from localStorage on initial render
   useEffect(() => {
@@ -47,41 +56,114 @@ export function CartProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("cart", JSON.stringify(cart));
   }, [cart]);
 
-  const addToCart = (product: Product, size?: string, color?: string) => {
-    setCart((prevCart) => {
+  // Check product availability
+  const checkAvailability = async (
+    productId: string,
+    quantity: number,
+  ): Promise<boolean> => {
+    try {
+      const { data, error } = await supabase
+        .from("products")
+        .select("inventory_count")
+        .eq("id", productId)
+        .single();
+
+      if (error) {
+        console.error("Error checking product availability:", error);
+        return false;
+      }
+
+      return data.inventory_count >= quantity;
+    } catch (error) {
+      console.error("Error checking product availability:", error);
+      return false;
+    }
+  };
+
+  const addToCart = async (
+    product: Product,
+    size?: string,
+    color?: string,
+  ): Promise<boolean> => {
+    setIsLoading(true);
+    try {
       // Check if product already exists in cart
-      const existingItemIndex = prevCart.findIndex(
+      const existingItemIndex = cart.findIndex(
         (item) =>
           item.id === product.id && item.size === size && item.color === color,
       );
 
+      let newQuantity = 1;
       if (existingItemIndex > -1) {
-        // Update quantity of existing item
-        const updatedCart = [...prevCart];
-        updatedCart[existingItemIndex].quantity += 1;
-        return updatedCart;
-      } else {
-        // Add new item to cart
-        return [...prevCart, { ...product, quantity: 1, size, color }];
+        newQuantity = cart[existingItemIndex].quantity + 1;
       }
-    });
+
+      // Check availability before adding to cart
+      const isAvailable = await checkAvailability(product.id, newQuantity);
+      if (!isAvailable) {
+        console.error("Product not available in requested quantity");
+        setIsLoading(false);
+        return false;
+      }
+
+      setCart((prevCart) => {
+        if (existingItemIndex > -1) {
+          // Update quantity of existing item
+          const updatedCart = [...prevCart];
+          updatedCart[existingItemIndex].quantity += 1;
+          return updatedCart;
+        } else {
+          // Add new item to cart
+          return [...prevCart, { ...product, quantity: 1, size, color }];
+        }
+      });
+
+      setIsLoading(false);
+      return true;
+    } catch (error) {
+      console.error("Error adding to cart:", error);
+      setIsLoading(false);
+      return false;
+    }
   };
 
   const removeFromCart = (productId: string) => {
     setCart((prevCart) => prevCart.filter((item) => item.id !== productId));
   };
 
-  const updateQuantity = (productId: string, quantity: number) => {
-    if (quantity <= 0) {
-      removeFromCart(productId);
-      return;
-    }
+  const updateQuantity = async (
+    productId: string,
+    quantity: number,
+  ): Promise<boolean> => {
+    setIsLoading(true);
+    try {
+      if (quantity <= 0) {
+        removeFromCart(productId);
+        setIsLoading(false);
+        return true;
+      }
 
-    setCart((prevCart) =>
-      prevCart.map((item) =>
-        item.id === productId ? { ...item, quantity } : item,
-      ),
-    );
+      // Check availability before updating quantity
+      const isAvailable = await checkAvailability(productId, quantity);
+      if (!isAvailable) {
+        console.error("Product not available in requested quantity");
+        setIsLoading(false);
+        return false;
+      }
+
+      setCart((prevCart) =>
+        prevCart.map((item) =>
+          item.id === productId ? { ...item, quantity } : item,
+        ),
+      );
+
+      setIsLoading(false);
+      return true;
+    } catch (error) {
+      console.error("Error updating quantity:", error);
+      setIsLoading(false);
+      return false;
+    }
   };
 
   const clearCart = () => {
@@ -105,6 +187,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
         clearCart,
         totalItems,
         subtotal,
+        isLoading,
+        checkAvailability,
       }}
     >
       {children}

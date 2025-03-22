@@ -5,13 +5,35 @@ import { Button } from "./ui/button";
 import { Minus, Plus, Trash2 } from "lucide-react";
 import Image from "next/image";
 import { useCart } from "@/context/cart-context";
+import { useState } from "react";
+import { toast } from "./ui/use-toast";
 
 interface CartItemProps {
   item: CartItemType;
 }
 
 export default function CartItem({ item }: CartItemProps) {
-  const { updateQuantity, removeFromCart } = useCart();
+  const { updateQuantity, removeFromCart, isLoading } = useCart();
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  const handleUpdateQuantity = async (newQuantity: number) => {
+    if (newQuantity <= 0) {
+      removeFromCart(item.id);
+      return;
+    }
+
+    setIsUpdating(true);
+    const success = await updateQuantity(item.id, newQuantity);
+    setIsUpdating(false);
+
+    if (!success && newQuantity > item.quantity) {
+      toast({
+        title: "Not available",
+        description: `Sorry, ${item.name} is not available in the requested quantity.`,
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <div className="flex items-center py-4 border-b border-gray-200">
@@ -38,16 +60,20 @@ export default function CartItem({ item }: CartItemProps) {
             variant="ghost"
             size="icon"
             className="h-8 w-8"
-            onClick={() => updateQuantity(item.id, item.quantity - 1)}
+            onClick={() => handleUpdateQuantity(item.quantity - 1)}
+            disabled={isLoading || isUpdating}
           >
             <Minus className="h-3 w-3" />
           </Button>
-          <span className="w-8 text-center">{item.quantity}</span>
+          <span className="w-8 text-center">
+            {isUpdating ? "..." : item.quantity}
+          </span>
           <Button
             variant="ghost"
             size="icon"
             className="h-8 w-8"
-            onClick={() => updateQuantity(item.id, item.quantity + 1)}
+            onClick={() => handleUpdateQuantity(item.quantity + 1)}
+            disabled={isLoading || isUpdating}
           >
             <Plus className="h-3 w-3" />
           </Button>
@@ -58,6 +84,7 @@ export default function CartItem({ item }: CartItemProps) {
           size="icon"
           className="ml-2 text-red-500 hover:text-red-700 hover:bg-transparent"
           onClick={() => removeFromCart(item.id)}
+          disabled={isLoading || isUpdating}
         >
           <Trash2 className="h-4 w-4" />
         </Button>

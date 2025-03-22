@@ -5,7 +5,10 @@ export interface Product {
   price: number;
   image: string;
   category: string;
+  inventory_count?: number;
   sizes?: string[];
   colors?: string[];
-  inStock: boolean;
+  inStock?: boolean;
+  sizeInventory?: Record<string, number>;
+  colorInventory?: Record<string, number>;
 }

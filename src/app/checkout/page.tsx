@@ -16,9 +16,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, CreditCard } from "lucide-react";
+import { AlertCircle, ArrowLeft, CreditCard, ShieldCheck } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { toast } from "@/components/ui/use-toast";
 import dynamic from "next/dynamic";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const StripeElementsWrapper = dynamic(
   () => import("@/components/stripe-elements"),
@@ -30,12 +32,13 @@ const ChapaPayment = dynamic(() => import("@/components/chapa-payment"), {
 const Navbar = dynamic(() => import("@/components/navbar"), { ssr: false });
 
 export default function CheckoutPage() {
-  const { cart, subtotal, clearCart } = useCart();
+  const { cart, subtotal, clearCart, checkAvailability } = useCart();
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [donation, setDonation] = useState(0);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [paymentMethod, setPaymentMethod] = useState("card");
+  const [inventoryError, setInventoryError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -61,62 +64,87 @@ export default function CheckoutPage() {
   };
 
   useEffect(() => {
-    // Create a PaymentIntent as soon as the page loads
-    if (cart.length > 0 && typeof window !== "undefined") {
-      createPaymentIntent();
+    // Verify inventory availability when the page loads
+    if (cart.length > 0) {
+      verifyInventoryAvailability();
     }
-  }, [cart, donation]);
+  }, [cart]);
 
-  const createPaymentIntent = async () => {
+  const verifyInventoryAvailability = async () => {
+    setInventoryError(null);
+
+    // Check each item in the cart for availability
+    for (const item of cart) {
+      const isAvailable = await checkAvailability(item.id, item.quantity);
+      if (!isAvailable) {
+        setInventoryError(
+          `${item.name} is not available in the requested quantity. Please update your cart.`,
+        );
+        return false;
+      }
+    }
+
+    return true;
+  };
+
+  const handleSubmitPayment = async () => {
+    // Validate form
+    if (
+      !formData.firstName ||
+      !formData.lastName ||
+      !formData.email ||
+      !formData.address ||
+      !formData.city ||
+      !formData.postalCode ||
+      !formData.country
+    ) {
+      toast({
+        title: "Missing information",
+        description: "Please fill in all required fields.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Verify inventory one more time before processing payment
+    const inventoryAvailable = await verifyInventoryAvailability();
+    if (!inventoryAvailable) {
+      return;
+    }
+
+    setIsSubmitting(true);
+
     try {
-      const totalAmount = subtotal + donation;
-
-      const response = await fetch("/api/create-payment-intent", {
+      const response = await fetch("/api/process-payment", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          amount: totalAmount,
-          metadata: {
-            cart_items: JSON.stringify(
-              cart.map((item) => ({ id: item.id, quantity: item.quantity })),
-            ),
-            donation_amount: donation,
-            customer_email: formData.email,
-          },
+          cart,
+          customerInfo: formData,
+          donation,
         }),
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        throw new Error("Payment failed");
+        throw new Error(data.error || "Payment processing failed");
       }
 
-      const { clientSecret: secret } = await response.json();
-      setClientSecret(secret);
-    } catch (error) {
-      console.error("Error creating payment intent:", error);
-    }
-  };
-
-  const handlePaymentSuccess = (paymentId: string) => {
-    // Save order to database
-    saveOrder(paymentId);
-
-    // Clear cart and redirect to success page
-    clearCart();
-    if (typeof window !== "undefined") {
-      router.push(`/success?session_id=${paymentId}`);
-    }
-  };
-
-  const saveOrder = async (paymentId: string) => {
-    try {
-      // In a real implementation, you would save the order to your database
-      // This is just a placeholder
-      console.log("Order saved with payment ID:", paymentId);
-    } catch (error) {
-      console.error("Error saving order:", error);
+      // Handle successful payment
+      clearCart();
+      router.push(`/success?session_id=${data.paymentIntentId}`);
+    } catch (error: any) {
+      console.error("Payment error:", error);
+      toast({
+        title: "Payment failed",
+        description:
+          error.message || "An error occurred during payment processing.",
+        variant: "destructive",
+      });
+      setIsSubmitting(false);
     }
   };
 
@@ -140,6 +168,14 @@ export default function CheckoutPage() {
         </div>
 
         <h1 className="text-3xl font-bold mb-8">Checkout</h1>
+
+        {inventoryError && (
+          <Alert variant="destructive" className="mb-6">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Inventory Issue</AlertTitle>
+            <AlertDescription>{inventoryError}</AlertDescription>
+          </Alert>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2">
@@ -281,39 +317,31 @@ export default function CheckoutPage() {
 
               <Card>
                 <CardHeader>
-                  <CardTitle>Payment Method</CardTitle>
+                  <CardTitle>Payment</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <Tabs
-                    defaultValue="card"
-                    onValueChange={setPaymentMethod}
-                    className="w-full"
-                  >
-                    <TabsList className="grid w-full grid-cols-2">
-                      <TabsTrigger value="card">Credit Card</TabsTrigger>
-                      <TabsTrigger value="chapa">Chapa</TabsTrigger>
-                    </TabsList>
-                    <TabsContent value="card" className="mt-4">
-                      <StripeElementsWrapper
-                        clientSecret={clientSecret}
-                        amount={subtotal + donation}
-                        onSuccess={handlePaymentSuccess}
-                        isSubmitting={isSubmitting}
-                        setIsSubmitting={setIsSubmitting}
-                      />
-                    </TabsContent>
-                    <TabsContent value="chapa" className="mt-4">
-                      <ChapaPayment
-                        amount={subtotal + donation}
-                        email={formData.email}
-                        firstName={formData.firstName}
-                        lastName={formData.lastName}
-                        onSuccess={handlePaymentSuccess}
-                        isSubmitting={isSubmitting}
-                        setIsSubmitting={setIsSubmitting}
-                      />
-                    </TabsContent>
-                  </Tabs>
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
+                      <ShieldCheck className="h-4 w-4 text-green-600" />
+                      <span>Secure payment processing</span>
+                    </div>
+
+                    <Button
+                      onClick={handleSubmitPayment}
+                      className="w-full bg-red-700 hover:bg-red-800"
+                      disabled={isSubmitting || !!inventoryError}
+                    >
+                      {isSubmitting
+                        ? "Processing..."
+                        : `Pay ${(subtotal + donation).toFixed(2)}`}
+                    </Button>
+
+                    <p className="text-xs text-gray-500">
+                      By clicking the button above, you agree to our terms of
+                      service and privacy policy. Your payment information is
+                      processed securely. We do not store credit card details.
+                    </p>
+                  </div>
                 </CardContent>
               </Card>
             </div>
@@ -334,6 +362,16 @@ export default function CheckoutPage() {
                       <div className="flex items-start">
                         <span className="text-sm font-medium">
                           {item.quantity} × {item.name}
+                          {item.size && (
+                            <span className="text-xs text-gray-500 block">
+                              Size: {item.size}
+                            </span>
+                          )}
+                          {item.color && (
+                            <span className="text-xs text-gray-500 block">
+                              Color: {item.color}
+                            </span>
+                          )}
                         </span>
                       </div>
                       <span className="text-sm">
