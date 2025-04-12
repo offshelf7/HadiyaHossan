@@ -10,6 +10,11 @@ const nextConfig = {
       "imgur.com",
     ],
   },
+  i18n: {
+    locales: ["en", "es", "fr", "am", "om", "ti"],
+    defaultLocale: "en",
+    localeDetection: true,
+  },
 };
 
 if (process.env.NEXT_PUBLIC_TEMPO) {

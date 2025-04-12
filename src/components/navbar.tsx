@@ -1,26 +1,27 @@
 "use client";
 
-import Link from "next/link";
-import { createClient } from "../../supabase/client";
+import { Menu, X } from "lucide-react";
 import { Button } from "./ui/button";
-import { User, UserCircle, Menu, X } from "lucide-react";
-import UserProfile from "./user-profile";
-import Image from "next/image";
 import CartIcon from "./cart-icon";
-import React from "react";
+import UserProfile from "./user-profile";
+import { useEffect, useState } from "react";
+import { createClient } from "@/utils/auth";
+import Link from "next/link";
+import Image from "next/image";
+import LanguageSwitcher from "./language-switcher";
 
 export default function Navbar() {
-  const supabase = createClient();
-  const [user, setUser] = React.useState<any>(null);
-  const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [user, setUser] = useState(null);
 
-  React.useEffect(() => {
-    const getUser = async () => {
+  useEffect(() => {
+    const fetchUser = async () => {
+      const supabase = createClient();
       const { data } = await supabase.auth.getUser();
       setUser(data.user);
     };
 
-    getUser();
+    fetchUser();
   }, []);
 
   const toggleMobileMenu = () => {
@@ -77,6 +78,7 @@ export default function Navbar() {
         </div>
 
         <div className="flex gap-4 items-center">
+          <LanguageSwitcher />
           <div className="mr-2">
             <CartIcon />
           </div>
